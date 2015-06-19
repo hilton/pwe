@@ -4,17 +4,22 @@ import java.util.Date
 import scala.collection.mutable.ListBuffer
 
 
-class Activity(val id: String, val activities: Set[Activity] = Set.empty, val transitions: Set[Activity] = Set.empty) {
+case class Transition(from: Activity, to: Activity)
 
-  def copy(id: String = id, activities: Set[Activity] = activities, transitions: Set[Activity] = transitions): Activity = {
+
+class Activity(val id: String, val activities: Set[Activity] = Set.empty, val transitions: Set[Transition] = Set.empty) {
+
+  def copy(id: String = id, activities: Set[Activity] = activities, transitions: Set[Transition] = transitions): Activity = {
     new Activity(id, activities, transitions)
   }
 
   def +(transition: (String, String)): Activity = transition match { case(fromId, toId) =>
-    activities.find(_.id == fromId).map { from =>
-      val to = activities.filter(_.id == toId)
-      val updatedFrom = from.copy(transitions = from.transitions ++ to)
-      copy(activities = activities.filterNot(_.id == fromId) + updatedFrom)
+    (for {
+      from <- activities.find(_.id == fromId)
+      to <- activities.find(_.id == toId)
+    } yield (from, to)).map { case (from, to) =>
+      val fromWithTransition = from.copy(transitions = from.transitions + Transition(from, to))
+      copy(activities = activities.filterNot(_.id == fromId) + fromWithTransition)
     }.getOrElse(this)
   }
 
@@ -25,12 +30,10 @@ class Activity(val id: String, val activities: Set[Activity] = Set.empty, val tr
   }
 
   def execute(activityInstance: ActivityInstance): Unit = {
-    val toActivities = activities.flatMap(_.transitions)
+    val toActivities = activities.flatMap(_.transitions).map(_.to)
     val startActivities = activities.toSet.diff(toActivities)
     startActivities.foreach(startActivity => activityInstance.execute(startActivity))
   }
-
-  override def toString = s"Auto[$id, $activities]" + transitions.map("→" + _.id).mkString("")
 }
 
 
@@ -47,11 +50,11 @@ case class ActivityInstance(activity: Activity, parent: Option[ActivityInstance]
 
   def end(): Unit = {
     endTime = Some(new Date())
-    activity.transitions.foreach(takeTransitionTo(_))
+    activity.transitions.foreach(transition => take(transition))
   }
 
-  def takeTransitionTo(activity: Activity): Unit = {
+  def take(transition: Transition): Unit = {
     endTime = Some(new Date())
-    parent.map(_.execute(activity))
+    parent.map(_.execute(transition.to))
   }
 }

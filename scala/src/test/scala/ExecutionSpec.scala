@@ -3,9 +3,9 @@ package ch01
 import org.scalatest._
 
 case class Automatic(override val id: String, override val activities: Set[Activity] = Set.empty,
-  override val transitions: Set[Activity] = Set.empty) extends Activity(id, activities, transitions) {
+  override val transitions: Set[Transition] = Set.empty) extends Activity(id, activities, transitions) {
 
-  override def copy(id: String = id, activities: Set[Activity] = activities, transitions: Set[Activity] = transitions): Activity = {
+  override def copy(id: String = id, activities: Set[Activity] = activities, transitions: Set[Transition] = transitions): Activity = {
     Automatic(id, activities, transitions)
   }
 
@@ -13,14 +13,12 @@ case class Automatic(override val id: String, override val activities: Set[Activ
     println(s"Automatic: executing activity $id")
     activityInstance.end()
   }
-
-  override def toString = s"Auto[$id]" + transitions.map("→" + _.id).mkString("")
 }
 
 case class Wait(override val id: String, override val activities: Set[Activity] = Set.empty,
-  override val transitions: Set[Activity] = Set.empty) extends Activity(id, activities, transitions) {
+  override val transitions: Set[Transition] = Set.empty) extends Activity(id, activities, transitions) {
 
-  override def copy(id: String = id, activities: Set[Activity] = activities, transitions: Set[Activity] = transitions): Activity = {
+  override def copy(id: String = id, activities: Set[Activity] = activities, transitions: Set[Transition] = transitions): Activity = {
     Wait(id, activities, transitions)
   }
 
