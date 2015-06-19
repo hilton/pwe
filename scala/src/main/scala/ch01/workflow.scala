@@ -6,6 +6,18 @@ import scala.collection.mutable.ListBuffer
 
 class Activity(val id: String, val activities: Set[Activity] = Set.empty, val transitions: Set[Activity] = Set.empty) {
 
+  def copy(id: String = id, activities: Set[Activity] = activities, transitions: Set[Activity] = transitions): Activity = {
+    new Activity(id, activities, transitions)
+  }
+
+  def +(transition: (String, String)): Activity = transition match { case(fromId, toId) =>
+    activities.find(_.id == fromId).map { from =>
+      val to = activities.filter(_.id == toId)
+      val updatedFrom = from.copy(transitions = from.transitions ++ to)
+      copy(activities = activities.filterNot(_.id == fromId) + updatedFrom)
+    }.getOrElse(this)
+  }
+
   def start(): ActivityInstance = {
     val activityInstance = ActivityInstance(this)
     execute(activityInstance)
@@ -17,6 +29,8 @@ class Activity(val id: String, val activities: Set[Activity] = Set.empty, val tr
     val startActivities = activities.toSet.diff(toActivities)
     startActivities.foreach(startActivity => activityInstance.execute(startActivity))
   }
+
+  override def toString = s"Auto[$id, $activities]" + transitions.map("→" + _.id).mkString("")
 }
 
 

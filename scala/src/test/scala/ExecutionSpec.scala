@@ -5,14 +5,24 @@ import org.scalatest._
 case class Automatic(override val id: String, override val activities: Set[Activity] = Set.empty,
   override val transitions: Set[Activity] = Set.empty) extends Activity(id, activities, transitions) {
 
+  override def copy(id: String = id, activities: Set[Activity] = activities, transitions: Set[Activity] = transitions): Activity = {
+    Automatic(id, activities, transitions)
+  }
+
   override def execute(activityInstance: ActivityInstance): Unit = {
     println(s"Automatic: executing activity $id")
     activityInstance.end()
   }
+
+  override def toString = s"Auto[$id]" + transitions.map("→" + _.id).mkString("")
 }
 
 case class Wait(override val id: String, override val activities: Set[Activity] = Set.empty,
   override val transitions: Set[Activity] = Set.empty) extends Activity(id, activities, transitions) {
+
+  override def copy(id: String = id, activities: Set[Activity] = activities, transitions: Set[Activity] = transitions): Activity = {
+    Wait(id, activities, transitions)
+  }
 
   override def execute(activityInstance: ActivityInstance): Unit = println(s"Wait: executing activity $id")
 }
@@ -20,12 +30,10 @@ case class Wait(override val id: String, override val activities: Set[Activity] 
 class ExecutionSpec extends FlatSpec with Matchers {
 
   "A workflow" should "do sequential automatic execution" in {
-    val b = Automatic("b")
-    val a = Automatic("a", transitions = Set(b))
-    val workflow = new Activity("workflow", Set(a, b))
+    val workflow = new Activity("workflow", Set(Automatic("a"), Automatic("b"))) + ("a" -> "b")
     val workflowInstance = workflow.start()
-    assert(openActivities(workflowInstance).isEmpty)
-    assert(completedActivities(workflowInstance) == Set("a", "b"))
+    assert(openActivities(workflowInstance).isEmpty, "open")
+    assert(completedActivities(workflowInstance) == Set("a", "b"), "complete")
   }
 
   it should "do parallel automatic execution" in {
@@ -36,9 +44,7 @@ class ExecutionSpec extends FlatSpec with Matchers {
   }
 
   it should "do sequential wait execution" in {
-    val b = Wait("b")
-    val a = Wait("a", transitions = Set(b))
-    val workflow = new Activity("workflow", Set(a, b))
+    val workflow = new Activity("workflow", Set(Wait("a"), Wait("b"))) + ("a" -> "b")
     val workflowInstance = workflow.start()
     assert(openActivities(workflowInstance) == Set("a"))
     assert(completedActivities(workflowInstance).isEmpty)
