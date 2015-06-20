@@ -27,28 +27,28 @@ class ExecutionSpec extends FlatSpec with Matchers {
 
   "A workflow" should "do sequential automatic execution" in {
     val workflow = new Workflow(Set(Automatic("a"), Automatic("b"))) + ("a" -> "b")
-    val workflowInstance = workflow.start()
+    val workflowInstance = WorkflowInstance(workflow).start()
     assert(openActivities(workflowInstance).isEmpty, "open")
     assert(completedActivities(workflowInstance) == Set("a", "b"), "complete")
   }
 
   it should "do parallel automatic execution" in {
     val workflow = new Workflow(Set(Automatic("a"), Automatic("b")))
-    val workflowInstance = workflow.start()
+    val workflowInstance = WorkflowInstance(workflow).start()
     assert(openActivities(workflowInstance).isEmpty)
     assert(completedActivities(workflowInstance) == Set("a", "b"))
   }
 
   it should "do sequential wait execution" in {
     val workflow = new Workflow(Set(Wait("a"), Wait("b"))) + ("a" -> "b")
-    val workflowInstance = workflow.start()
+    val workflowInstance = WorkflowInstance(workflow).start()
     assert(openActivities(workflowInstance) == Set("a"))
     assert(completedActivities(workflowInstance).isEmpty)
   }
 
   it should "do parallel wait execution" in {
     val workflow = new Workflow(Set(Wait("a"), Wait("b")))
-    val workflowInstance = workflow.start()
+    val workflowInstance = WorkflowInstance(workflow).start()
     assert(openActivities(workflowInstance) == Set("a", "b"))
     assert(completedActivities(workflowInstance).isEmpty)
   }

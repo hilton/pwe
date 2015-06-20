@@ -4,7 +4,7 @@ import java.util.Date
 import scala.collection.mutable.ListBuffer
 
 
-/** A process defined by activities (nodes) in the process, and their transitions. */
+/** A definition of an execution flow, composed of activities (nodes) in the process, and their transitions. */
 case class Workflow(activities: Set[Activity] = Set.empty) {
 
   /** Returns a copy of this workflow with the transition specified by the pair of activity IDs added.*/
@@ -17,15 +17,6 @@ case class Workflow(activities: Set[Activity] = Set.empty) {
       copy(activities = activities.filterNot(_.id == fromId) + fromWithTransition)
     }.getOrElse(this)
   }
-
-  /** Starts execution of this workflow, by executing activities with no incoming transition. */
-  def start(): WorkflowInstance = {
-    val workflowInstance = WorkflowInstance(this)
-    val toActivities = activities.flatMap(_.transitions).map(_.to)
-    val startActivities = activities.toSet.diff(toActivities)
-    startActivities.foreach(startActivity => workflowInstance.execute(startActivity))
-    workflowInstance
-  }
 }
 
 
@@ -33,7 +24,8 @@ case class Workflow(activities: Set[Activity] = Set.empty) {
 case class Transition(from: Activity, to: Activity)
 
 
-/** A workflow activity (a.k.a. task) that has transitions to other activities. */
+/** A static description of one step in a workflow, with a unique identifier for establishing transitions, and a set of
+  * outgoing transitions. Subclasses implement concrete runtime behaviour. */
 abstract class Activity(val id: String, val transitions: Set[Transition] = Set.empty) {
 
   def copy(id: String = id, transitions: Set[Transition] = transitions): Activity
@@ -42,9 +34,17 @@ abstract class Activity(val id: String, val transitions: Set[Transition] = Set.e
 }
 
 
-/** A single case of running a workflow. */
+/** One execution of a workflow. */
 case class WorkflowInstance(workflow: Workflow, activityInstances: ListBuffer[ActivityInstance] = new ListBuffer()) {
-  
+
+  /** Starts execution of this workflow, by executing activities with no incoming transition. */
+  def start(): WorkflowInstance = {
+    val toActivities = workflow.activities.flatMap(_.transitions).map(_.to)
+    val startActivities = workflow.activities.diff(toActivities)
+    startActivities.foreach(startActivity => execute(startActivity))
+    this
+  }
+
   /** Executes an activity within this workflow instance. */
   def execute(activity: Activity): Unit = {
     val activityInstance = ActivityInstance(activity, this)
@@ -59,9 +59,15 @@ case class ActivityInstance(activity: Activity, workflowInstance: WorkflowInstan
 
   val startTime = new Date()
 
-  /** Completes this execution and takes transitions to the next activities. */
+  /** Completes this activity instance and continues execution via all outgoing transitions to the next activities. */
   def end(): Unit = {
     endTime = Some(new Date())
-    activity.transitions.foreach(transition => workflowInstance.execute(transition.to))
+    activity.transitions.foreach(transition => take(transition))
+  }
+
+  /** Completes this activity instance and continues execution via one transition to one next activity. */
+  def take(transition: Transition): Unit = {
+    endTime = Some(new Date())
+    workflowInstance.execute(transition.to)
   }
 }
