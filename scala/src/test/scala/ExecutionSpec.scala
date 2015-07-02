@@ -8,7 +8,7 @@ case class Automatic(override val id: String, override val transitions: Set[Tran
     Automatic(id, transitions)
   }
 
-  override def execute(activityInstance: ActivityInstance): Unit = {
+  override def execute(activityInstance: ActivityInstance): WorkflowInstance = {
     println(s"Automatic: executing activity $id")
     activityInstance.end()
   }
@@ -20,7 +20,10 @@ case class Wait(override val id: String, override val transitions: Set[Transitio
     Wait(id, transitions)
   }
 
-  override def execute(activityInstance: ActivityInstance): Unit = println(s"Wait: executing activity $id")
+  override def execute(activityInstance: ActivityInstance): WorkflowInstance = {
+    println(s"Wait: executing activity $id")
+    activityInstance.workflowInstance
+  }
 }
 
 class ExecutionSpec extends FlatSpec with Matchers {

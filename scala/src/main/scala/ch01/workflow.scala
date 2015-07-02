@@ -1,7 +1,6 @@
 package ch01
 
 import java.util.Date
-import scala.collection.mutable.ListBuffer
 
 
 /** A definition of an execution flow, composed of activities (nodes) in the process, and their transitions. */
@@ -30,44 +29,44 @@ abstract class Activity(val id: String, val transitions: Set[Transition] = Set.e
 
   def copy(id: String = id, transitions: Set[Transition] = transitions): Activity
 
-  def execute(activityInstance: ActivityInstance): Unit
+  def execute(activityInstance: ActivityInstance): WorkflowInstance
 }
 
 
 /** One execution of a workflow. */
-case class WorkflowInstance(workflow: Workflow, activityInstances: ListBuffer[ActivityInstance] = new ListBuffer()) {
+case class WorkflowInstance(workflow: Workflow, activityInstances: Set[ActivityInstance] = Set.empty) {
 
   /** Starts execution of this workflow, by executing activities with no incoming transition. */
   def start(): WorkflowInstance = {
     val toActivities = workflow.activities.flatMap(_.transitions).map(_.to)
     val startActivities = workflow.activities.diff(toActivities)
-    startActivities.foreach(startActivity => execute(startActivity))
-    this
+    startActivities.foldLeft(this)((workflowInstance, startActivity) => workflowInstance.execute(startActivity))
   }
 
   /** Executes an activity within this workflow instance. */
-  def execute(activity: Activity): Unit = {
-    val activityInstance = ActivityInstance(activity, this)
-    activityInstances.append(activityInstance)
+  def execute(activity: Activity): WorkflowInstance = {
+    val newActivity = ActivityInstance(activity, this)
+    val activityInstance = newActivity.copy(workflowInstance = copy(activityInstances = activityInstances + newActivity))
     activity.execute(activityInstance)
   }
 }
 
 
 /** A single case of running an activity. */
-case class ActivityInstance(activity: Activity, workflowInstance: WorkflowInstance, var endTime: Option[Date] = None) {
+case class ActivityInstance(activity: Activity, workflowInstance: WorkflowInstance, endTime: Option[Date] = None) {
 
   val startTime = new Date()
 
   /** Completes this activity instance and continues execution via all outgoing transitions to the next activities. */
-  def end(): Unit = {
-    endTime = Some(new Date())
-    activity.transitions.foreach(transition => take(transition))
+  def end(): WorkflowInstance = {
+    val ended = copy(endTime = Some(new Date()))
+    val continued = activity.transitions.foldLeft(ended)((instance, transition) => instance.take(transition))
+    val otherActivityInstances = continued.workflowInstance.activityInstances.filterNot(_.activity.id == activity.id)
+    continued.workflowInstance.copy(activityInstances = otherActivityInstances + continued)
   }
 
   /** Completes this activity instance and continues execution via one transition to one next activity. */
-  def take(transition: Transition): Unit = {
-    endTime = Some(new Date())
-    workflowInstance.execute(transition.to)
+  def take(transition: Transition): ActivityInstance = {
+    copy(workflowInstance = workflowInstance.execute(transition.to), endTime = Some(new Date()))
   }
 }
