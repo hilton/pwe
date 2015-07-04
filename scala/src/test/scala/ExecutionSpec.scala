@@ -2,6 +2,7 @@ package ch01
 
 import org.scalatest._
 
+/** An activity that completes automatically, with user intervention, like an automated service task. */
 case class Automatic(override val id: String, override val transitions: Set[Transition] = Set.empty) extends Activity(id, transitions) {
 
   override def copy(id: String = id, transitions: Set[Transition] = transitions): Activity = {
@@ -14,6 +15,7 @@ case class Automatic(override val id: String, override val transitions: Set[Tran
   }
 }
 
+/** An activity that never completes, as if waiting for an external signal (not implemented), such as user interaction. */
 case class Wait(override val id: String, override val transitions: Set[Transition] = Set.empty) extends Activity(id, transitions) {
 
   override def copy(id: String = id, transitions: Set[Transition] = transitions): Activity = {
@@ -38,22 +40,22 @@ class ExecutionSpec extends FlatSpec with Matchers {
   it should "do parallel automatic execution" in {
     val workflow = new Workflow(Set(Automatic("a"), Automatic("b")))
     val workflowInstance = WorkflowInstance(workflow).start()
-    assert(openActivities(workflowInstance).isEmpty)
-    assert(completedActivities(workflowInstance) == Set("a", "b"))
+    assert(openActivities(workflowInstance).isEmpty, "open")
+    assert(completedActivities(workflowInstance) == Set("a", "b"), "complete")
   }
 
   it should "do sequential wait execution" in {
     val workflow = new Workflow(Set(Wait("a"), Wait("b"))) + ("a" -> "b")
     val workflowInstance = WorkflowInstance(workflow).start()
-    assert(openActivities(workflowInstance) == Set("a"))
-    assert(completedActivities(workflowInstance).isEmpty)
+    assert(openActivities(workflowInstance) == Set("a"), "open")
+    assert(completedActivities(workflowInstance).isEmpty, "complete")
   }
 
   it should "do parallel wait execution" in {
     val workflow = new Workflow(Set(Wait("a"), Wait("b")))
     val workflowInstance = WorkflowInstance(workflow).start()
-    assert(openActivities(workflowInstance) == Set("a", "b"))
-    assert(completedActivities(workflowInstance).isEmpty)
+    assert(openActivities(workflowInstance) == Set("a", "b"), "open")
+    assert(completedActivities(workflowInstance).isEmpty, "complete")
   }
 
   private def openActivities(workflowInstance: WorkflowInstance): Set[String] = {
