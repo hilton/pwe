@@ -3,7 +3,8 @@ package ch01
 import org.scalatest._
 
 /** An activity that completes automatically, with user intervention, like an automated service task. */
-case class Automatic(override val id: String, override val transitions: Set[Transition] = Set.empty) extends Activity(id, transitions) {
+case class Automatic(override val id: String, override val transitions: Set[Transition] = Set.empty)
+  extends Activity(id, transitions) {
 
   override def copy(id: String = id, transitions: Set[Transition] = transitions): Activity = {
     Automatic(id, transitions)
@@ -15,8 +16,11 @@ case class Automatic(override val id: String, override val transitions: Set[Tran
   }
 }
 
-/** An activity that never completes, as if waiting for an external signal (not implemented), such as user interaction. */
-case class Wait(override val id: String, override val transitions: Set[Transition] = Set.empty) extends Activity(id, transitions) {
+/**
+ * An activity that never completes, as if waiting for an external signal (not implemented), such as user interaction.
+ */
+case class Wait(override val id: String, override val transitions: Set[Transition] = Set.empty)
+  extends Activity(id, transitions) {
 
   override def copy(id: String = id, transitions: Set[Transition] = transitions): Activity = {
     Wait(id, transitions)

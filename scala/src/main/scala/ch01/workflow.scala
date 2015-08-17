@@ -1,7 +1,5 @@
 package ch01
 
-import java.util.Date
-
 
 /** A definition of an execution flow, composed of activities (nodes) in the process, and their transitions. */
 case class Workflow(activities: Set[Activity] = Set.empty) {
@@ -51,6 +49,8 @@ case class WorkflowInstance(workflow: Workflow, activityInstances: Set[ActivityI
   }
 }
 
+
+import java.util.Date
 
 /** A single case of running an activity. */
 case class ActivityInstance(activity: Activity, workflowInstance: WorkflowInstance, endTime: Option[Date] = None) {
